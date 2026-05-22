@@ -53,6 +53,8 @@ goal(if((location(Tom) == Cottage & location(Medicine) == Tom)) 2 elseif((alive(
 
 Every action has an explanation for each of its consenting characters, including `buy(Tom, Medicine, TomCoin, Market)`, which is explained for both `Tom` and the `Merchant`, hence both of their goals being listed below. The last line shows the authors goal, meaning that the plan indeed increases the author's utility to our desired value. This plan is *verified* by the tool.
 
+Note that these explanations look different from sample solutions to this domain. This is because this tool only uses the first explanation found during search for each consenting character for every action. This is true even if a better explanation may be found later on.
+
 Now, consider this plan, which does not raise the authors utility
 ```
 walk(Tom, Cottage, Crossroads)
