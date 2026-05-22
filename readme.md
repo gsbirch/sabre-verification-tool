@@ -105,3 +105,10 @@ java -jar verify.jar -p gramma.txt -pl actions.txt
 
 Explanations for actions will always be printed. This is unlike Sabre, which will only do so in verbose mode.
 
+## Temporal and Epistemic Depth Limits
+
+Note that by default, all the search limits are set to unlimited. Thus the planner can typically look at infinite plans, depending on the domain. To counteract this, you may need to add some limits to the search to ensure the tool can determine whether or not an action can be explained.
+
+When determining search limits, it is important to note that this tool changes the meaning of the search node limit and character temporal limit. The character temporal limit for this tool limits the amount of actions a character can reason about after each action that the tool attempts to explain. For example, if you set the character temporal limit to 3, characters may reason about plans of up to three actions that occur after each action they consent to. The search node limit for this tool limits the amount of nodes that may be expanded beyond the node that represents the characters belief of the state after each action they consent to. For example, if you set the search node limit to 1000, the tool may expand up to 1000 nodes to try to generate an explanation for each action they consent to, with the first node representing their belief of the state after the action the tool is currently attempting to explain.
+
+The epistemic depth limit for this tool is still thought of from the author's perspective. This means that, for a given action and consenting character of that action, the first node to be searched, which represents that character's belief of the state after that action, has an epistemic depth of 1.
