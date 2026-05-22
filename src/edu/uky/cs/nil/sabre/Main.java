@@ -1,13 +1,31 @@
 package edu.uky.cs.nil.sabre;
 
+import java.io.File;
 import java.lang.reflect.Array;
+import java.util.ArrayList;
+import java.util.Collections;
+import java.util.Dictionary;
+import java.util.HashMap;
+import java.util.List;
+import java.util.Scanner;
 
+import edu.uky.cs.nil.sabre.comp.CompiledAction;
+import edu.uky.cs.nil.sabre.comp.CompiledProblem;
+import edu.uky.cs.nil.sabre.etree.EventSet;
+import edu.uky.cs.nil.sabre.graph.StateGraph;
+import edu.uky.cs.nil.sabre.graph.StateNode;
+import edu.uky.cs.nil.sabre.io.Parser;
+import edu.uky.cs.nil.sabre.logic.Expression;
+import edu.uky.cs.nil.sabre.logic.False;
+import edu.uky.cs.nil.sabre.logic.True;
 import edu.uky.cs.nil.sabre.prog.GraphHeuristic;
 import edu.uky.cs.nil.sabre.prog.ProgressionCostFactory;
 import edu.uky.cs.nil.sabre.prog.ProgressionPlanner;
 import edu.uky.cs.nil.sabre.prog.ProgressionPlanner.Method;
+import edu.uky.cs.nil.sabre.prog.ProgressionSearch;
 import edu.uky.cs.nil.sabre.prog.ReachabilityHeuristic;
 import edu.uky.cs.nil.sabre.prog.RelaxedPlanHeuristic;
+import edu.uky.cs.nil.sabre.prog.SearchNode;
 import edu.uky.cs.nil.sabre.prog.WeightedCost;
 import edu.uky.cs.nil.sabre.search.Planner;
 import edu.uky.cs.nil.sabre.search.Result;
@@ -99,6 +117,13 @@ public class Main {
 	 */
 	public static final String EXPLANATION_PRUNING_KEY = "-ep";
 	
+	
+	/**
+	 * SABRE EXPLANATION TOOL
+	 * The command line key for the plan to attempt to explain
+	 */
+	public static final String PLAN_KEY = "-pl";
+	
 	/**
 	 * The abbreviation for {@link ProgressionPlanner.Method#BEST_FIRST
 	 * best-first search}
@@ -186,6 +211,7 @@ public class Main {
 		pad(HELP_KEY) +									"print this message and halt\n" +
 		pad(VERBOSE_KEY) +								"verbose output gives details of the search and results\n" +
 		pad(PROBLEM_KEY + " PATH") +					"problem file to parse\n" +
+		pad(PLAN_KEY + " PATH") +						"plan file to parse\n" +
 		pad(GOAL_KEY + " NUMBER") +						"utility a solution much reach (default round up or +1)\n" +
 		pad(METHOD_KEY + " OPTION") +					"heuristic search method; options include:\n" +
 		pad("   " + BEST_FIRST_OPTION) +				"A* best-first (default)\n" +
@@ -362,25 +388,101 @@ public class Main {
 				return;
 			}
 			// Configure session according to command line arguments.
-			Session session = new Session();
 			boolean verbose = arguments.contains(VERBOSE_KEY);
+			Session fakeSession = new Session();
+			configure(fakeSession, arguments, false);
 			if(verbose)
 				System.out.println(Settings.CREDITS);
-			configure(session, arguments, verbose);
+			
+			
+			// read in the actions from the file
+			arguments.require(PLAN_KEY);
+			File actionsFile = arguments.getFile(PLAN_KEY);
 			arguments.checkUnused();
-			// Run planner.
-			Result<?> result;
-			if(verbose)
-				result = Worker.get(s -> session.getResult(), session.getStatus());
-			else
-				result = session.getResult();
-			// Print result.
-			if(verbose)
-				System.out.println(session.getPrinter().toString(result));
-			else if(result.solution == null)
-				System.out.println(result.message);
-			else
-				System.out.println(session.getPrinter().toString(session.getPlan(null)));
+			Scanner scanner = new Scanner(actionsFile);
+			ArrayList<CompiledAction> scannedActions = new ArrayList<>();
+			while (scanner.hasNextLine()) {
+			    String line = scanner.nextLine();
+			    EventSet<CompiledAction> as = ((CompiledProblem) generatedCompiledProblem).actions;
+			    for (CompiledAction a : as) {
+			    	if (a.toString().equals(line)) {
+			    		scannedActions.add(a);
+			    	}
+			    }
+			}
+			scanner.close();
+			
+			
+			
+			ArrayList<CompiledAction> actionsToApply = new ArrayList<>();
+			ArrayList<ArrayList<Solution<?>>> explanations = new ArrayList<>();
+			
+			boolean authorGoalAchieved = false;
+	
+			// We'll now generate an explanation for each action
+			for (CompiledAction ca : scannedActions) {
+				explanations.add(new ArrayList<>());
+				// We build up the partial plan that we'll start with
+				actionsToApply.add(ca);
+				
+				// We need an explanation for every consenting character
+				for (Character consenter : ca.consenting) {
+					// we make a node for every action, then one more to get the branch
+					searchBuffer = actionsToApply.size() + 1;
+					temporalBuffer = actionsToApply.size();
+					epistemicBuffer = 0;
+					
+					Session session = new Session();
+					configure(session, arguments, verbose);
+					
+					ProgressionSearch progSearch = (ProgressionSearch) session.getSearch();
+					
+					// stuff for creating a search starting at the action we want to explain
+					// doesn't really work
+//					CompiledProblem comProb = (CompiledProblem) generatedCompiledProblem;
+//					StateGraph graph = new StateGraph(generatedCompiledProblem, comProb.start);
+//					StateNode current = graph.root;
+//					for (CompiledAction ta : actionsToApply) {
+//						current = current.getAfter(ta).getAfterTriggers();
+//					}
+//					current = current.getEpistemicChild(consenter).parent;
+//					session.setState(current);
+					
+					// Set up our search with the actions and the consenter we're using
+					progSearch.SetExplanationGoal(actionsToApply, consenter);
+					
+					// Get the solution, and print it if verbose
+					Result<?> result;
+					if(verbose)
+						result = Worker.get(s -> session.getResult(), session.getStatus());
+					else
+						result = session.getResult();
+					
+					// Add the solution to our list of explanations
+					explanations.get(explanations.size() - 1).add(result.solution);
+					if (scannedActions.size() == actionsToApply.size()) {
+						Number authorUtil = ((ProgressionSearch) session.getSearch()).authorUtility(actionsToApply);
+						if (authorUtil.compareTo(session.goal) >= 0)
+							authorGoalAchieved = true;
+					}
+				}
+			}
+			
+			// Create the solution that we'll eventually build up
+			Expression authorGoal = generatedCompiledProblem.utility;
+			Expression util = authorGoalAchieved ? authorGoal : True.TRUE;
+			Solution<CompiledAction> bigSolution = new SolutionGoal<>(null, util);
+			
+			// Go backwards, and add each action and its explanations
+			for (int i = scannedActions.size() - 1; i >= 0; i--) {
+				bigSolution = bigSolution.prepend(scannedActions.get(i));
+				for (Solution<?> explanation : explanations.get(i)) {
+					if (explanation == null) continue;
+					bigSolution = bigSolution.setExplanation((Solution<CompiledAction>) explanation);
+				}
+			}
+			// Print out the solutions
+			System.out.println(bigSolution);
 		}
 		catch(Throwable t) {
 			if(t instanceof RuntimeException && t.getCause() != null)
@@ -388,6 +490,14 @@ public class Main {
 			System.err.println("Error: " + t.getMessage());
 		}
 	}
+	
+	// we only have one problem class that we continue to use for all sessions
+	static Problem generatedProblem = null;
+	static Problem generatedCompiledProblem = null;
+	
+	static int temporalBuffer = 0;
+	static int epistemicBuffer = 0;
+	static int searchBuffer = 0;
 	
 	/**
 	 * Configures the given {@link Session session} according to the {@link
@@ -403,26 +513,53 @@ public class Main {
 	 * being configured (for example, if the parser fails to parse the problem)
 	 */
 	public static void configure(Session session, CommandLineArguments arguments, boolean verbose) throws Exception {
-		// Problem
-		arguments.require(PROBLEM_KEY);
-		session.setProblem(arguments.getFile(PROBLEM_KEY));
-		if(verbose)
-			print("Problem", session.getProblem());
-		// Compiled Problem
-		if(verbose)
-			Worker.run(s -> session.getCompiledProblem(), session.getStatus());
-		else
-			session.getCompiledProblem();
-		if(verbose)
-			print("Compiled Problem", session.getCompiledProblem());
+		if (generatedProblem == null) {
+			// Problem
+			arguments.require(PROBLEM_KEY);
+			session.setProblem(arguments.getFile(PROBLEM_KEY));
+			if(verbose)
+				print("Problem", session.getProblem());
+			// Compiled Problem
+			if(verbose)
+				Worker.run(s -> session.getCompiledProblem(), session.getStatus());
+			else
+				session.getCompiledProblem();
+			if(verbose)
+				print("Compiled Problem", session.getCompiledProblem());
+			
+			generatedProblem = session.getProblem();
+			generatedCompiledProblem = session.getCompiledProblem();
+		}
+		else {
+			arguments.require(PROBLEM_KEY);
+			session.setProblem(generatedProblem);
+			session.setCompiledProblem(generatedCompiledProblem);
+		}
+		
 		// Search
 		session.setGoal(arguments.getDouble(GOAL_KEY, session.getGoal().value));
-		session.setSearchLimit(arguments.getLong(SEARCH_LIMIT_KEY, Planner.UNLIMITED_NODES));
-		session.setSpaceLimit(arguments.getLong(SPACE_LIMIT_KEY, Planner.UNLIMITED_NODES));
+		
+		// A buffer is added for search/space since we expand nodes to get the node we want to explain
+		long searchLimit = arguments.getLong(SEARCH_LIMIT_KEY, Planner.UNLIMITED_NODES);
+		if (searchLimit != Planner.UNLIMITED_NODES) searchLimit += searchBuffer;
+		session.setSearchLimit(searchLimit);
+		long spaceLimit = arguments.getLong(SPACE_LIMIT_KEY, Planner.UNLIMITED_NODES);
+		if (spaceLimit != Planner.UNLIMITED_NODES) spaceLimit += searchBuffer;
+		session.setSpaceLimit(spaceLimit);
+		
 		session.setTimeLimit(arguments.getLong(TIME_LIMIT_KEY, Planner.UNLIMITED_TIME));
 		session.setAuthorTemporalLimit(arguments.getInt(AUTHOR_TEMPORAL_LIMIT_KEY, Planner.UNLIMITED_DEPTH));
-		session.setCharacterTemporalLimit(arguments.getInt(CHARACTER_TEMPORAL_LIMIT_KEY, Planner.UNLIMITED_DEPTH));
-		session.setEpistemicLimit(arguments.getInt(EPISTEMIC_LIMIT_KEY, Planner.UNLIMITED_DEPTH));
+		
+		// A buffer is added since we've already taken some actions before the node to be explained
+		int charTempLimit = arguments.getInt(CHARACTER_TEMPORAL_LIMIT_KEY, Planner.UNLIMITED_DEPTH);
+		if (charTempLimit != Planner.UNLIMITED_DEPTH) charTempLimit += temporalBuffer;
+		session.setCharacterTemporalLimit(charTempLimit);
+		
+		// I don't believe this buffer is necessary but just in case
+		int epistemicLimit = arguments.getInt(EPISTEMIC_LIMIT_KEY, Planner.UNLIMITED_DEPTH);
+		if (epistemicLimit != Planner.UNLIMITED_DEPTH) epistemicLimit += epistemicBuffer;
+		session.setEpistemicLimit(epistemicLimit);
+		
 		if(session.getPlanner() instanceof ProgressionPlanner) {
 			METHOD_OPTIONS.set(session, arguments.getOption(METHOD_KEY, METHOD_OPTIONS.codes));
 			COST_OPTIONS.set(session, arguments.getOption(COST_KEY, COST_OPTIONS.codes));
@@ -433,6 +570,7 @@ public class Main {
 				session.setCost(new WeightedCost.Factory(session.getHeuristic(), arguments.getDouble(HEURISTIC_WEIGHT_KEY, 1)));
 			session.setExplanationPruning(arguments.getBoolean(EXPLANATION_PRUNING_KEY, true));
 		}
+		
 		if(verbose)
 			Worker.run(s -> session.getSearch(), session.getStatus());
 		else
