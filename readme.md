@@ -147,7 +147,7 @@ walk(Merchant, Market, Crossroads)
 
 ## Search Limits
 
-Unlike Sabre, in which limits are defined for the entire process, this tool defines search limits for each search that it performs. For example, if given a plan with 5 actions, each with 1 consenting character, 5 searches will occur. Each of the 5 searches will have their own separate limits (though they will each have the same quantities, as quantities are specified in the command line for the entire process, not for each individual search.
+Unlike Sabre, in which limits are defined for the entire process, this tool defines search limits for each search that it performs. For example, if given a plan with 5 actions, each with 1 consenting character, 5 searches will occur. Each of the 5 searches will have their own separate limits (though they will each have the same values, as values are specified in the command line for the entire process, not for each individual search.
 
 Note that by default, all the search limits are set to unlimited. Thus the planner can typically look at infinite plans, depending on the domain. To counteract this, you may need to add some limits to the search to ensure the tool can determine whether or not an action can be explained.
 
