@@ -105,7 +105,7 @@ java -jar verify.jar -p gramma.txt -pl actions.txt
 
 Explanations for actions will always be printed. This is unlike Sabre, which will only do so in verbose mode.
 
-## Temporal and Epistemic Depth Limits
+## Search Limits
 
 Note that by default, all the search limits are set to unlimited. Thus the planner can typically look at infinite plans, depending on the domain. To counteract this, you may need to add some limits to the search to ensure the tool can determine whether or not an action can be explained.
 
