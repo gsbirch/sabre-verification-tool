@@ -105,6 +105,22 @@ java -jar verify.jar -p gramma.txt -pl actions.txt
 
 Explanations for actions will always be printed. This is unlike Sabre, which will only do so in verbose mode.
 
+Search limits can be set as arguments when executing the jar file. You can find more details about these below. For example, if you wanted to set the character temporal limit to 5, and the search node limit to 100000, the command would be:
+```
+java -jar verify.jar -p gramma.txt -pl actions.txt -ctl 5 -vl 100000
+```
+
+You can also limit epistemic depth, also known as theory of mind. For example, this command sets the character temporal limit to 5, and the search node limit to 100000, and the epistemic depth limit to 3:
+```
+java -jar verify.jar -p gramma.txt -pl actions.txt -ctl 5 -vl 100000 -el
+```
+
+You can change the desired author's utility. If the plan given as input does not meet or exceed this value, the last line of output will be `goal(False)`. This command requires an ending author's utility of 2 (which is achieved by the example plan given in the gramma domain):
+```
+ava -jar verify.jar -p gramma.txt -pl actions.txt -g 2
+```
+
+
 ## Search Limits
 
 Note that by default, all the search limits are set to unlimited. Thus the planner can typically look at infinite plans, depending on the domain. To counteract this, you may need to add some limits to the search to ensure the tool can determine whether or not an action can be explained.
@@ -112,3 +128,4 @@ Note that by default, all the search limits are set to unlimited. Thus the plann
 When determining search limits, it is important to note that this tool changes the meaning of the search node limit and character temporal limit. The character temporal limit for this tool limits the amount of actions a character can reason about after each action that the tool attempts to explain. For example, if you set the character temporal limit to 3, characters may reason about plans of up to three actions that occur after each action they consent to. The search node limit for this tool limits the amount of nodes that may be expanded beyond the node that represents the characters belief of the state after each action they consent to. For example, if you set the search node limit to 1000, the tool may expand up to 1000 nodes to try to generate an explanation for each action they consent to, with the first node representing their belief of the state after the action the tool is currently attempting to explain.
 
 The epistemic depth limit for this tool is still thought of from the author's perspective. This means that, for a given action and consenting character of that action, the first node to be searched, which represents that character's belief of the state after that action, has an epistemic depth of 1.
+
