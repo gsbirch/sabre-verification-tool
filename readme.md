@@ -120,6 +120,31 @@ You can change the desired author's utility. If the plan given as input does not
 java -jar verify.jar -p gramma.txt -pl actions.txt -g 2
 ```
 
+### Input Plan
+
+The plan given as input through the `-pl` flag must be a valid plan in the given domain written in a plain text file. Each line must have exactly one fully ground action, which no lines in between.
+
+Here is an example from the gramma domain that achieves an author utility of 2
+```
+walk(Tom, Cottage, Crossroads)
+walk(Tom, Crossroads, Market)
+buy(Tom, Medicine, TomCoin, Market)
+walk(Tom, Market, Crossroads)
+walk(Tom, Crossroads, Cottage)
+```
+
+Here is an example from the gramma domain that achieves an author utility of 1
+```
+walk(Tom, Cottage, Crossroads)
+walk(Bandit, Camp, Crossroads)
+attack(Bandit, Tom, Crossroads)
+```
+
+Here is an example from the gramma domain that achieves an author utility of 0. This action can't be explained because the Merchant doesn't initally believe they are able to sell the potion to Tom.
+```
+walk(Merchant, Market, Crossroads)
+```
+
 
 ## Search Limits
 
