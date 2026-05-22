@@ -1,0 +1,5 @@
+walk(Tom, Cottage, Crossroads)
+walk(Tom, Crossroads, Market)
+buy(Tom, Medicine, TomCoin, Market)
+walk(Tom, Market, Crossroads)
+walk(Tom, Crossroads, Cottage)

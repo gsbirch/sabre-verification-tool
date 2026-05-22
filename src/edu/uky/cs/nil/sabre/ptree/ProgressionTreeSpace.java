@@ -29,8 +29,8 @@ import edu.uky.cs.nil.sabre.util.Worker.Status;
  */
 public class ProgressionTreeSpace implements ProgressionSpace<Long> {
 	
-	/** The tree structure that represents all states in the space */
-	private final ProgressionTree tree;
+	/** The tree structure that represents all states in the space. Once again changed to public */
+	public final ProgressionTree tree;
 	
 	/**
 	 * Constructs a new tree-based progression state space.
