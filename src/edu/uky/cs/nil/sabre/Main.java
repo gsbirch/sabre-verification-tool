@@ -470,7 +470,7 @@ public class Main {
 			
 			// Create the solution that we'll eventually build up
 			Expression authorGoal = generatedCompiledProblem.utility;
-			Expression util = authorGoalAchieved ? authorGoal : True.TRUE;
+			Expression util = authorGoalAchieved ? authorGoal : False.FALSE;
 			Solution<CompiledAction> bigSolution = new SolutionGoal<>(null, util);
 			
 			// Go backwards, and add each action and its explanations
