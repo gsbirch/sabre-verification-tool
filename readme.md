@@ -145,7 +145,6 @@ Here is an example from the gramma domain that achieves an author utility of 0. 
 walk(Merchant, Market, Crossroads)
 ```
 
-
 ## Search Limits
 
 Note that by default, all the search limits are set to unlimited. Thus the planner can typically look at infinite plans, depending on the domain. To counteract this, you may need to add some limits to the search to ensure the tool can determine whether or not an action can be explained.
