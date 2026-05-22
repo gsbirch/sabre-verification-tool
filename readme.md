@@ -117,7 +117,7 @@ java -jar verify.jar -p gramma.txt -pl actions.txt -ctl 5 -vl 100000 -el
 
 You can change the desired author's utility. If the plan given as input does not meet or exceed this value, the last line of output will be `goal(False)`. This command requires an ending author's utility of 2 (which is achieved by the example plan given in the gramma domain):
 ```
-ava -jar verify.jar -p gramma.txt -pl actions.txt -g 2
+java -jar verify.jar -p gramma.txt -pl actions.txt -g 2
 ```
 
 
