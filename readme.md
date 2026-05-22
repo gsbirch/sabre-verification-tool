@@ -82,7 +82,7 @@ walk(Tom, Crossroads, Market)
 goal(False)
 ```
 
-The tool found an explanation for each action, but does not achieve the desired author's utility, and so the final line is `goal(False)`, this plan is not *verified* by the tool. 
+The tool found an explanation for each action, but does not achieve the desired author's utility, and so the final line is `goal(False)`. Thus, this plan is not *verified* by the tool. 
 
 ## Basic Usage
 
