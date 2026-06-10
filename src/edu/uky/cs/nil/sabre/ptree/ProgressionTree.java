@@ -1458,7 +1458,8 @@ public class ProgressionTree implements Serializable {
 		long branch = getBeliefs(getBefore(node), character);
 		if(create) {
 			long child = findChild(branch, event);
-			if(child == -1 && getValue(branch, event.getPrecondition()).equals(True.TRUE))
+			boolean v = getValue(branch, event.getPrecondition()).equals(True.TRUE);
+			if(child == -1 && v)
 				child = makeChild(branch, event);
 			branch = child;
 		}

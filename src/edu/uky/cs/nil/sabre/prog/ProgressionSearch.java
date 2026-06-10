@@ -15,8 +15,10 @@ import edu.uky.cs.nil.sabre.SolutionGoal;
 import edu.uky.cs.nil.sabre.State;
 import edu.uky.cs.nil.sabre.Utilities;
 import edu.uky.cs.nil.sabre.comp.CompiledAction;
+import edu.uky.cs.nil.sabre.comp.CompiledEvent;
 import edu.uky.cs.nil.sabre.comp.CompiledFluent;
 import edu.uky.cs.nil.sabre.comp.CompiledProblem;
+import edu.uky.cs.nil.sabre.comp.CompiledTrigger;
 import edu.uky.cs.nil.sabre.etree.EventTree;
 import edu.uky.cs.nil.sabre.logic.Value;
 import edu.uky.cs.nil.sabre.ptree.ProgressionTree;
@@ -123,6 +125,7 @@ public class ProgressionSearch extends Search<CompiledAction> {
 	private SearchRoot<?> root;
 	
 	private SearchNode<?> explainNode;
+	private Value startingUtil;
 	
 	/**
 	 * The value of the {@link edu.uky.cs.nil.sabre.Problem#utility author's
@@ -240,13 +243,16 @@ public class ProgressionSearch extends Search<CompiledAction> {
 	// to the branch for the desired consenting character
 	// The search will then try to find an explanation for the generated node
 	public void SetExplanationGoal(List<CompiledAction> actionList, Character character) {
+		startingUtil = root.getUtility(character);
 		// go down the list of actions to find our new node
 		explainNode = root;
+		
 		for (CompiledAction ca : actionList) {
 			explainNode = explainNode.getChild(ca);
 		}
 		// swap to the branch for the consenting character
 		explainNode = explainNode.getBranch(character);
+		
 		// change the starting node to our new node to be explained
 		queue.clear();
 		push(explainNode);
@@ -303,22 +309,36 @@ public class ProgressionSearch extends Search<CompiledAction> {
 		while (nodeID != stopID && nodeID != beforeID && nodeID != rootID) {
 			
 			// Skip any triggers along the way
+			CompiledAction compAct = tree.getAction(nodeID);
+			CompiledEvent compEvt = tree.getEvent(nodeID);
 			if (tree.getAction(nodeID) != null && tree.getEvent(nodeID) instanceof CompiledAction) {
 				// Add the action to our explanation
 				explanation = explanation.prepend(tree.getAction(nodeID));
 				
-				// Explain the action for any other consenting characters
-				ImmutableSet<Character> consenters = tree.getAction(nodeID).consenting;
-				for (Character c : consenters) {
-					// we find a new character that we must explain
-					if (!checkChars.contains(c)) {
-						// our goal is to explain the action we're currently looking at
-						long branchGoal = tree.getBranch(nodeID, c);
-						// we need to go down to that goals explanation
-						long branch = tree.getExplanation(branchGoal, c);
-						// This should always return something because explainNode will always be fully explained
-						Solution<CompiledAction> charExplain = findExplanation(tree, branch, branchGoal, seenCharacters.add(consenting));
-						explanation = explanation.setExplanation(charExplain);
+				// We need to skip the explain nodes action
+				// a character does not care about the explanations for others
+				// after achieving their goal
+				if (explainNode.getAction() != compAct) {
+					// Explain the action for any other consenting characters
+					ImmutableSet<Character> consenters = tree.getAction(nodeID).consenting;
+					for (Character c : consenters) {
+						// we find a new character that we must explain
+						if (!checkChars.contains(c)) {
+							// our goal is to explain the action we're currently looking at
+							long branchGoal = tree.getBranch(nodeID, c);
+
+							// we need to go down to that goals explanation
+							long branch = tree.getExplanation(branchGoal, c);
+							
+							// branch goal is intended to represent the most recent action
+							while (!(tree.getEvent(branchGoal) instanceof CompiledAction)) {
+								branchGoal = tree.getBefore(branchGoal);
+							}
+							
+							// This should always return something because explainNode will always be fully explained
+							Solution<CompiledAction> charExplain = findExplanation(tree, branch, branchGoal, seenCharacters.add(consenting));
+							explanation = explanation.setExplanation(charExplain);
+						}
 					}
 				}
 			}
@@ -334,25 +354,26 @@ public class ProgressionSearch extends Search<CompiledAction> {
 	protected void run(Progress<CompiledAction> progress, Status status) {
 		setStatus(status, progress);
 		while(!progress.isDone()) {
-			if (explainNode.isExplained()) {
-				// Grabbing stuff from our node to explain
-				ProgressionTreeSpace explainSpace = (ProgressionTreeSpace) explainNode.getSpace();
-				ProgressionTree tree = explainSpace.tree;
-				Character consentingChar = explainNode.getCharacter();
-				
-				// Here is the node that represents the end of the explanation we found
-				long explainNodeID = (long) tree.getExplanation((long) explainNode.getNode(), consentingChar);
+			// Grabbing stuff from our node to explain
+			ProgressionTreeSpace explainSpace = (ProgressionTreeSpace) explainNode.getSpace();
+			ProgressionTree tree = explainSpace.tree;
+			Character consentingChar = explainNode.getCharacter();
+			long explainNodeID = (long) tree.getExplanation((long) explainNode.getNode(), consentingChar);
+			
+			// We generate an explanation when the tree has been populated with one
+			// For some reason, this isn't always the same as when explainNode.isExplained() is true
+			if (explainNodeID != -1) {
 				
 				// This function builds the solution from the given explanation node
 				ImmutableSet<Character> seens = new ImmutableSet<>();
-				Solution<CompiledAction> explanation = findExplanation(tree, explainNodeID, (long) explainNode.getNode(), seens);
+				long goalID = (long) explainNode.getNode();
 				
-				// This is the solution that will get "returned" by this function
-				Solution<CompiledAction> sol = new SolutionGoal<>(null, tree.getGoal(tree.getRoot(explainNodeID)));
+				// Goal ID is intended to represent the most recent action
+				while (!(tree.getEvent(goalID) instanceof CompiledAction)) {
+					goalID = tree.getBefore(goalID);
+				}
 				
-				// Building the solution
-				sol = sol.prepend(explainNode.getAction());
-				sol = sol.setExplanation(explanation);
+				Solution<CompiledAction> explanation = findExplanation(tree, explainNodeID, goalID, seens);
 				
 				// We set the solution to halt this search
 				progress.setSolution(explanation, goal);

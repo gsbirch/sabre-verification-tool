@@ -424,7 +424,7 @@ public class Main {
 				explanations.add(new ArrayList<>());
 				// We build up the partial plan that we'll start with
 				actionsToApply.add(ca);
-				
+
 				// We need an explanation for every consenting character
 				for (Character consenter : ca.consenting) {
 					// we make a node for every action, then one more to get the branch
