@@ -520,9 +520,9 @@ public class Main {
 			
 			System.out.println("Character-Action Pairs Explained: " + pairsExplained + " / " + pairsCounted);		
 			if (validSolution)
-				System.out.println("This solution can be explained by Sabre");
+				System.out.println("This solution can be explained by Sabre within the given constraints");
 			else
-				System.out.println("This solution can not be explained by Sabre");
+				System.out.println("This solution can not be explained by Sabre within the given constraints");
 		}
 		catch(Throwable t) {
 			if(t instanceof RuntimeException && t.getCause() != null)
