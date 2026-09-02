@@ -8,3 +8,5 @@ domains
 build
 /target/
 app/target/
+sabre/target/
+sabre/docs/
