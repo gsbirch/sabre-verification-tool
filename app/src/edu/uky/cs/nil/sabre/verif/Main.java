@@ -1,4 +1,4 @@
-package edu.uky.cs.nil.sabre.prog;
+package edu.uky.cs.nil.sabre.verif;
 
 import java.io.File;
 import java.io.FileOutputStream;
@@ -37,6 +37,8 @@ import edu.uky.cs.nil.sabre.prog.ProgressionSearch;
 import edu.uky.cs.nil.sabre.prog.ReachabilityHeuristic;
 import edu.uky.cs.nil.sabre.prog.RelaxedPlanHeuristic;
 import edu.uky.cs.nil.sabre.prog.WeightedCost;
+import edu.uky.cs.nil.sabre.prog.VerificationSearch;
+import edu.uky.cs.nil.sabre.prog.VerificationPlanner;
 import edu.uky.cs.nil.sabre.search.Planner;
 import edu.uky.cs.nil.sabre.search.Result;
 import edu.uky.cs.nil.sabre.search.Search;
